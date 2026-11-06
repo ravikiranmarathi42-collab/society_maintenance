@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Society Maintenance Management System — PHP + Node.js + MySQL
 
 This project was adapted from the uploaded `1.zip` project. The existing visual styling and browser JavaScript were retained, and the application backend was rebuilt around PHP and Node.js with MySQL as the shared persistent database. The original Flask/SQLite source is kept in `legacy-python-original/` as a reference only; it is not needed to run the new application.
@@ -119,3 +120,6 @@ society_maintenance_management/
 ├── .env.example
 └── README.md
 ```
+=======
+# society_maintenance
+>>>>>>> 46f9b426e2e2fa05aa09f0ab393b0487bea5a835
