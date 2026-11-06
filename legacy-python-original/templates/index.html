@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Society Maintenance Management System{% endblock %}
+
+{% block public_content %}
+<!-- Hero Section with Modern Residential Background -->
+<section class="hero-section text-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <span class="badge bg-primary px-3 py-2 rounded-pill mb-3 text-uppercase fw-semibold" style="letter-spacing: 0.08em;">
+                    <i class="fa-solid fa-city me-1"></i> Smart Apartment Living
+                </span>
+                <h1 class="hero-title text-white">Society Maintenance Management System</h1>
+                <p class="hero-subtitle">
+                    A comprehensive, modern digital platform empowering housing societies and residential apartments to streamline flats, resident records, automated maintenance billing, instant payments, complaints, and expense accounting.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 py-2 rounded-pill shadow-lg fw-semibold">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Get Started
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg px-4 py-2 rounded-pill fw-semibold">
+                        <i class="fa-solid fa-user-plus me-2"></i> Resident Sign Up
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Statistics Bar -->
+<section class="py-4 bg-white border-bottom shadow-sm">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3">
+                <div class="stat-number">100%</div>
+                <div class="text-muted small fw-semibold">Paperless Billing</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-number">24/7</div>
+                <div class="text-muted small fw-semibold">Complaint Tracking</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-number">Instant</div>
+                <div class="text-muted small fw-semibold">Online Payment Receipts</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-number">Real-Time</div>
+                <div class="text-muted small fw-semibold">Expense Transparency</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-5">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <span class="text-primary fw-bold text-uppercase small" style="letter-spacing: 0.05em;">Key Capabilities</span>
+            <h2 class="fw-bold mt-1">Smart Modules Built For Society Operations</h2>
+            <p class="text-muted mx-auto" style="max-width: 650px;">
+                Everything management committees and apartment residents need in one unified, responsive web portal.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Feature 1 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <h5 class="fw-bold">Flat & Resident Directory</h5>
+                    <p class="text-muted small">
+                        Track all residential units, blocks, floor numbers, occupancy statuses (Occupied / Vacant), and resident profiles securely.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <h5 class="fw-bold">Maintenance Billing</h5>
+                    <p class="text-muted small">
+                        Automate monthly maintenance bill generation for all flats with customizable rates, due dates, and overdue penalty calculations.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <h5 class="fw-bold">Payments & Receipts</h5>
+                    <p class="text-muted small">
+                        Simulate seamless online payments via UPI, Net Banking, and Cards. Generate printable, branded society payment receipts immediately.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <h5 class="fw-bold">Helpdesk & Complaints</h5>
+                    <p class="text-muted small">
+                        Residents log maintenance issues (plumbing, electrical, security, lift). Administrators review, assign technicians, and track resolution.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h5 class="fw-bold">Notices & Circulars</h5>
+                    <p class="text-muted small">
+                        Broadcast AGM notices, water shutdown alerts, festive celebrations, and society rules directly to all resident dashboards.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 6 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h5 class="fw-bold">Expenses & Audit Reports</h5>
+                    <p class="text-muted small">
+                        Record day-to-day expenditures (security, electricity, gardening, repairs). Generate income-expense sheets and export reports to CSV.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-5 bg-white border-top">
+    <div class="container py-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&w=800&q=80" 
+                     alt="Apartment Building" 
+                     class="img-fluid rounded-4 shadow-lg">
+            </div>
+            <div class="col-lg-6">
+                <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-3 py-2 rounded-pill mb-2">About The Project</span>
+                <h2 class="fw-bold mb-3">Modern Housing Society Governance Made Simple</h2>
+                <p class="text-muted mb-4">
+                    Managing a modern residential complex requires continuous coordination between the managing committee, accounting staff, facility workers, and apartment residents. The Society Maintenance Management System digitizes conventional paper ledgers, eliminates collection delays, and provides complete accountability.
+                </p>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                            <span class="fw-medium">Role-Based Access (Admin / Resident)</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                            <span class="fw-medium">Secure SQLite Database</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                            <span class="fw-medium">Printable Receipts & Reports</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                            <span class="fw-medium">One-Click CSV Export</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('login') }}" class="btn btn-primary px-4 py-2 rounded-pill">
+                    Sign In to Portal <i class="fa-solid fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

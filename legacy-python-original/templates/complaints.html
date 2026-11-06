@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Complaints Management - Society Maintenance Management System{% endblock %}
+{% block header_title %}Complaints & Service Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold m-0 text-dark">Society Complaints Desk</h4>
+            <p class="text-muted small m-0">Review resident grievances, assign maintenance staff, and update resolution statuses.</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Logged</div>
+                    <div class="stat-value">{{ complaints|length }}</div>
+                </div>
+                <div class="stat-icon primary"><i class="fa-solid fa-headset"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Submitted</div>
+                    <div class="stat-value text-secondary">{{ complaints|selectattr('status', 'equalto', 'Submitted')|list|length }}</div>
+                </div>
+                <div class="stat-icon warning"><i class="fa-solid fa-inbox"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-value text-warning">{{ complaints|selectattr('status', 'equalto', 'In Progress')|list|length }}</div>
+                </div>
+                <div class="stat-icon info"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Resolved</div>
+                    <div class="stat-value text-success">{{ complaints|selectattr('status', 'equalto', 'Resolved')|list|length }}</div>
+                </div>
+                <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Pills & Search -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'all' %}active{% endif %}" href="{{ url_for('complaints', status='all') }}">All Requests</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'Submitted' %}active{% endif %}" href="{{ url_for('complaints', status='Submitted') }}">Submitted</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'In Progress' %}active{% endif %}" href="{{ url_for('complaints', status='In Progress') }}">In Progress</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'Resolved' %}active{% endif %}" href="{{ url_for('complaints', status='Resolved') }}">Resolved</a>
+            </li>
+        </ul>
+        <div class="w-25">
+            <input type="text" id="tableSearchInput" class="form-control form-control-sm" placeholder="Search complaint, flat, category...">
+        </div>
+    </div>
+
+    <!-- Complaints Table Card -->
+    <div class="card-custom">
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Category</th>
+                        <th>Flat & Resident</th>
+                        <th>Subject & Details</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Logged Date</th>
+                        <th>Admin Remarks</th>
+                        <th class="text-end">Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaints %}
+                    <tr>
+                        <td class="fw-bold text-muted">#{{ c.id }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {% if c.category == 'Water Supply' or c.category == 'Plumbing' %}
+                                <i class="fa-solid fa-faucet-drip text-primary me-1"></i>
+                                {% elif c.category == 'Electricity' %}
+                                <i class="fa-solid fa-bolt text-warning me-1"></i>
+                                {% elif c.category == 'Lift / Elevator' %}
+                                <i class="fa-solid fa-arrows-up-down text-info me-1"></i>
+                                {% elif c.category == 'Cleaning' %}
+                                <i class="fa-solid fa-broom text-success me-1"></i>
+                                {% elif c.category == 'Security' or c.category == 'Parking' %}
+                                <i class="fa-solid fa-shield-halved text-danger me-1"></i>
+                                {% else %}
+                                <i class="fa-solid fa-tag text-secondary me-1"></i>
+                                {% endif %}
+                                {{ c.category }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>Flat {{ c.flat_number }}</strong>
+                            <div class="text-muted small">{{ c.resident_name }} ({{ c.resident_phone }})</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ c.subject }}</div>
+                            <div class="text-muted small" style="max-width: 280px; word-break: break-word;">{{ c.description }}</div>
+                        </td>
+                        <td>
+                            {% if c.priority == 'High' or c.priority == 'Emergency' %}
+                            <span class="badge badge-status badge-high">{{ c.priority }}</span>
+                            {% elif c.priority == 'Medium' %}
+                            <span class="badge badge-status badge-medium">{{ c.priority }}</span>
+                            {% else %}
+                            <span class="badge badge-status badge-low">{{ c.priority }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.status == 'Resolved' %}
+                            <span class="badge badge-status badge-resolved"><i class="fa-solid fa-circle-check"></i> Resolved</span>
+                            {% elif c.status == 'In Progress' %}
+                            <span class="badge badge-status badge-in-progress"><i class="fa-solid fa-screwdriver-wrench"></i> In Progress</span>
+                            {% else %}
+                            <span class="badge badge-status badge-submitted"><i class="fa-solid fa-clock"></i> Submitted</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ c.created_at|format_date }}</td>
+                        <td>
+                            {% if c.admin_remarks %}
+                            <span class="small text-secondary">{{ c.admin_remarks }}</span>
+                            {% else %}
+                            <span class="small text-muted fst-italic">Pending review</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary py-1 px-2" data-bs-toggle="modal" data-bs-target="#updateComplaintModal{{ c.id }}" title="Update Status">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Action
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Update Complaint Status Modal -->
+                    <div class="modal fade" id="updateComplaintModal{{ c.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=c.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Update Complaint #{{ c.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                                            <div class="fw-bold text-dark">{{ c.subject }}</div>
+                                            <div class="text-muted small mb-2">{{ c.description }}</div>
+                                            <div class="small">
+                                                <strong>Reported by:</strong> {{ c.resident_name }} (Flat {{ c.flat_number }}) &bull; {{ c.created_at }}
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
+                                            <select name="status" class="form-select" required>
+                                                <option value="Submitted" {% if c.status == 'Submitted' %}selected{% endif %}>Submitted</option>
+                                                <option value="In Progress" {% if c.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                                <option value="Resolved" {% if c.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                                <option value="Closed" {% if c.status == 'Closed' %}selected{% endif %}>Closed</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Admin Resolution Remarks / Action Taken</label>
+                                            <textarea name="admin_remarks" class="form-control" rows="3" placeholder="e.g. Electrician Shri Sharma visited and fixed the tripping breaker. Test certified.">{{ c.admin_remarks or '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Save Resolution</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No complaints recorded under this filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

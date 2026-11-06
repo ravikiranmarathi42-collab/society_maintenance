@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Bills - Society Maintenance Management System{% endblock %}
+{% block header_title %}Maintenance Bill Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold m-0 text-dark">Society Maintenance Bills</h4>
+            <p class="text-muted small m-0">Generate monthly assessments, track dues, penalties, and payment statuses.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#bulkGenerateModal">
+                <i class="fa-solid fa-layer-group me-1"></i> Bulk Generate for Month
+            </button>
+            <button class="btn btn-primary btn-sm rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#singleBillModal">
+                <i class="fa-solid fa-plus me-1"></i> New Single Bill
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Filter Tabs & Search -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'all' %}active{% endif %}" href="{{ url_for('maintenance_bills', status='all') }}">All Bills</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'Pending' %}active{% endif %}" href="{{ url_for('maintenance_bills', status='Pending') }}">Pending</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'Paid' %}active{% endif %}" href="{{ url_for('maintenance_bills', status='Paid') }}">Paid</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 {% if current_status == 'Overdue' %}active{% endif %}" href="{{ url_for('maintenance_bills', status='Overdue') }}">Overdue</a>
+            </li>
+        </ul>
+        <div class="w-25">
+            <input type="text" id="tableSearchInput" class="form-control form-control-sm" placeholder="Search bill #, flat, month...">
+        </div>
+    </div>
+
+    <!-- Maintenance Bills Table Card -->
+    <div class="card-custom">
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Bill Number</th>
+                        <th>Flat & Resident</th>
+                        <th>Billing Month</th>
+                        <th>Bill Amount</th>
+                        <th>Penalty</th>
+                        <th>Total Due</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td class="fw-bold text-primary">{{ bill.bill_no }}</td>
+                        <td>
+                            <strong>Flat {{ bill.flat_number }}</strong>
+                            <div class="text-muted small">{{ bill.resident_name or 'Vacant Unit' }}</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ bill.billing_month }}</span></td>
+                        <td>{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount) }}</td>
+                        <td class="text-danger">
+                            {% if bill.penalty > 0 %}
+                            +{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.penalty) }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">
+                            {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount + bill.penalty) }}
+                        </td>
+                        <td>
+                            <span class="small {% if bill.status == 'Overdue' %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                {{ bill.due_date }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if bill.status == 'Paid' %}
+                            <span class="badge badge-status badge-paid"><i class="fa-solid fa-circle-check"></i> Paid</span>
+                            {% elif bill.status == 'Pending' %}
+                            <span class="badge badge-status badge-pending"><i class="fa-solid fa-clock"></i> Pending</span>
+                            {% else %}
+                            <span class="badge badge-status badge-overdue"><i class="fa-solid fa-circle-exclamation"></i> Overdue</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if bill.status != 'Paid' %}
+                            <button class="btn btn-sm btn-success py-1 px-2" data-bs-toggle="modal" data-bs-target="#recordPaymentModal{{ bill.id }}" title="Record Payment">
+                                <i class="fa-solid fa-money-bill-wave"></i> Pay
+                            </button>
+                            {% else %}
+                            <a href="{{ url_for('view_bill_receipt', bill_id=bill.id) }}" class="btn btn-sm btn-outline-primary py-1 px-2" title="Print Receipt">
+                                <i class="fa-solid fa-print"></i> Receipt
+                            </a>
+                            {% endif %}
+                            
+                            <button class="btn btn-sm btn-outline-secondary py-1 px-2" data-bs-toggle="modal" data-bs-target="#editBillModal{{ bill.id }}" title="Edit Bill">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+
+                            <form method="POST" action="{{ url_for('delete_bill', bill_id=bill.id) }}" class="d-inline confirm-delete-form" data-item-name="Bill {{ bill.bill_no }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete Bill">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- Record Offline Payment Modal -->
+                    {% if bill.status != 'Paid' %}
+                    <div class="modal fade" id="recordPaymentModal{{ bill.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('record_payment') }}">
+                                    <input type="hidden" name="bill_id" value="{{ bill.id }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Record Payment for Bill {{ bill.bill_no }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span>Flat Number:</span>
+                                                <strong>Flat {{ bill.flat_number }}</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span>Billing Month:</span>
+                                                <strong>{{ bill.billing_month }}</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between fs-5 fw-bold text-primary">
+                                                <span>Total Payable:</span>
+                                                <span>{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount + bill.penalty) }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Amount Paid (₹) <span class="text-danger">*</span></label>
+                                            <input type="number" step="0.01" name="amount" class="form-control" value="{{ bill.amount + bill.penalty }}" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Payment Mode <span class="text-danger">*</span></label>
+                                            <select name="payment_method" class="form-select" required>
+                                                <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
+                                                <option value="Cash">Cash at Society Office</option>
+                                                <option value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</option>
+                                                <option value="Cheque">Cheque</option>
+                                                <option value="Credit/Debit Card">Credit / Debit Card</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Transaction Reference / Cheque No</label>
+                                            <input type="text" name="transaction_id" class="form-control" placeholder="e.g. UPI/20261015/0912 or Cheque #49201">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Payment Date <span class="text-danger">*</span></label>
+                                            <input type="date" name="payment_date" class="form-control" value="{{ current_date }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success btn-sm">Confirm & Generate Receipt</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Edit Bill Modal -->
+                    <div class="modal fade" id="editBillModal{{ bill.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('edit_bill', bill_id=bill.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Edit Bill {{ bill.bill_no }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Amount (₹)</label>
+                                                <input type="number" step="0.01" name="amount" class="form-control" value="{{ bill.amount }}" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Penalty (₹)</label>
+                                                <input type="number" step="0.01" name="penalty" class="form-control" value="{{ bill.penalty }}">
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Due Date</label>
+                                                <input type="date" name="due_date" class="form-control" value="{{ bill.due_date }}" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Status</label>
+                                                <select name="status" class="form-select" required>
+                                                    <option value="Pending" {% if bill.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                    <option value="Paid" {% if bill.status == 'Paid' %}selected{% endif %}>Paid</option>
+                                                    <option value="Overdue" {% if bill.status == 'Overdue' %}selected{% endif %}>Overdue</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Remarks / Notes</label>
+                                            <textarea name="notes" class="form-control" rows="2">{{ bill.notes or '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No maintenance bills found for this filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Single Bill Generation -->
+<div class="modal fade" id="singleBillModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('generate_single_bill') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Generate Single Maintenance Bill</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Target Flat <span class="text-danger">*</span></label>
+                        <select name="flat_id" class="form-select" required>
+                            <option value="" disabled selected>-- Select Flat --</option>
+                            {% for flat in all_flats %}
+                            <option value="{{ flat.id }}">Flat {{ flat.flat_number }} ({{ flat.flat_type }} - Rate: ₹{{ flat.maintenance_rate }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Billing Month (YYYY-MM) <span class="text-danger">*</span></label>
+                            <input type="month" name="billing_month" class="form-control" value="2026-11" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Due Date <span class="text-danger">*</span></label>
+                            <input type="date" name="due_date" class="form-control" value="2026-11-15" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Amount (₹) <small class="text-muted">(Leave 0 to use flat's preset rate)</small></label>
+                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Notes / Purpose</label>
+                        <input type="text" name="notes" class="form-control" value="Monthly society maintenance charges">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Generate Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Bulk Bill Generation for All Flats -->
+<div class="modal fade" id="bulkGenerateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('generate_bulk_bills') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Bulk Generate Monthly Bills</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small">
+                        <i class="fa-solid fa-circle-info me-1"></i> This will generate individual bills for all occupied flats according to their designated maintenance rates. Existing bills for the selected month will be safely skipped.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Billing Month <span class="text-danger">*</span></label>
+                        <input type="month" name="billing_month" class="form-control" value="2026-11" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Payment Due Date <span class="text-danger">*</span></label>
+                        <input type="date" name="due_date" class="form-control" value="2026-11-15" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Standard Bill Remarks</label>
+                        <input type="text" name="notes" class="form-control" value="Regular monthly society maintenance bill">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Generate Bills for All Flats</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

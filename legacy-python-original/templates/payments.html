@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Management - Society Maintenance Management System{% endblock %}
+{% block header_title %}Payment Management & Receipts{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold m-0 text-dark">Payment Transactions</h4>
+            <p class="text-muted small m-0">Detailed ledger of all maintenance fee collections and issued receipts.</p>
+        </div>
+        <a href="{{ url_for('maintenance_bills', status='Pending') }}" class="btn btn-outline-primary btn-sm rounded-pill">
+            <i class="fa-solid fa-plus me-1"></i> Record Pending Bill Payment
+        </a>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Collected</div>
+                    <div class="stat-value text-success">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(total_collected) }}</div>
+                </div>
+                <div class="stat-icon success"><i class="fa-solid fa-money-check-dollar"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Transactions Count</div>
+                    <div class="stat-value">{{ payments|length }}</div>
+                </div>
+                <div class="stat-icon primary"><i class="fa-solid fa-receipt"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Top Mode</div>
+                    <div class="stat-value text-info" style="font-size: 1.4rem;">UPI / Net Banking</div>
+                </div>
+                <div class="stat-icon info"><i class="fa-solid fa-mobile-screen-button"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Table Card -->
+    <div class="card-custom">
+        <div class="card-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                <h5 class="card-title m-0">Collection Ledger ({{ payments|length }} Records)</h5>
+            </div>
+            <div class="w-25">
+                <input type="text" id="tableSearchInput" class="form-control form-control-sm" placeholder="Search receipt, flat, ref...">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Receipt No</th>
+                        <th>Bill Reference</th>
+                        <th>Flat & Resident</th>
+                        <th>Amount Paid</th>
+                        <th>Payment Method</th>
+                        <th>Transaction Ref</th>
+                        <th>Payment Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Print Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td class="fw-bold text-primary">{{ p.receipt_no }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ p.bill_no }}</span>
+                            <div class="text-muted small">{{ p.billing_month }}</div>
+                        </td>
+                        <td>
+                            <strong>Flat {{ p.flat_number }}</strong>
+                            <div class="text-muted small">{{ p.resident_name }}</div>
+                        </td>
+                        <td class="fw-bold text-success fs-6">
+                            {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(p.amount) }}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {% if p.payment_method == 'UPI' %}
+                                <i class="fa-solid fa-mobile-screen text-primary me-1"></i>
+                                {% elif p.payment_method == 'Cash' %}
+                                <i class="fa-solid fa-wallet text-success me-1"></i>
+                                {% elif p.payment_method == 'Bank Transfer' %}
+                                <i class="fa-solid fa-building-columns text-info me-1"></i>
+                                {% else %}
+                                <i class="fa-solid fa-credit-card text-secondary me-1"></i>
+                                {% endif %}
+                                {{ p.payment_method }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="small font-monospace text-muted">{{ p.transaction_id or 'OFFLINE/CASH' }}</span>
+                        </td>
+                        <td>{{ p.payment_date|format_datetime }}</td>
+                        <td>
+                            <span class="badge badge-status badge-paid"><i class="fa-solid fa-check"></i> {{ p.status }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('view_receipt', payment_id=p.id) }}" class="btn btn-sm btn-outline-primary py-1 px-3 rounded-pill" title="Print Official Receipt">
+                                <i class="fa-solid fa-print me-1"></i> View Receipt
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No payment transactions recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

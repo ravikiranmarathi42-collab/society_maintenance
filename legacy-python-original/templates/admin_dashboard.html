@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Society Maintenance Management System{% endblock %}
+{% block header_title %}Society Administration Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Welcome Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold m-0 text-dark">Welcome back, {{ session.get('full_name') }}!</h4>
+            <p class="text-muted small m-0">Here is what is happening in Greenfield Heights today.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('maintenance_bills') }}" class="btn btn-outline-primary btn-sm rounded-pill">
+                <i class="fa-solid fa-file-invoice-dollar me-1"></i> Generate Bills
+            </a>
+            <a href="{{ url_for('notices') }}" class="btn btn-primary btn-sm rounded-pill shadow-sm">
+                <i class="fa-solid fa-plus me-1"></i> Post Announcement
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Cards (Requirement 3) -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Flats -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Flats</div>
+                    <div class="stat-value">{{ stats.total_flats }}</div>
+                    <div class="stat-subtext text-success">
+                        <i class="fa-solid fa-check-circle me-1"></i> {{ stats.occupied_flats }} Occupied &bull; {{ stats.vacant_flats }} Vacant
+                    </div>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fa-solid fa-door-open"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Residents -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Active Residents</div>
+                    <div class="stat-value">{{ stats.total_residents }}</div>
+                    <div class="stat-subtext text-info">
+                        <i class="fa-solid fa-users me-1"></i> Registered Members
+                    </div>
+                </div>
+                <div class="stat-icon info">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Collected Maintenance -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Collected Maintenance</div>
+                    <div class="stat-value">{{ config.CURRENCY_SYMBOL }}{{ "{:,.0f}".format(stats.total_collected) }}</div>
+                    <div class="stat-subtext text-success">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i> {{ stats.paid_bills_count }} Payments Recorded
+                    </div>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Pending Maintenance -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Pending Dues</div>
+                    <div class="stat-value text-danger">{{ config.CURRENCY_SYMBOL }}{{ "{:,.0f}".format(stats.pending_amount) }}</div>
+                    <div class="stat-subtext text-danger">
+                        <i class="fa-solid fa-clock me-1"></i> {{ stats.pending_bills_count }} Unpaid Bills
+                    </div>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Row Metrics: Unresolved Complaints & Society Expenses -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Unresolved Complaints</div>
+                    <div class="stat-value text-warning">{{ stats.unresolved_complaints }}</div>
+                    <div class="stat-subtext text-muted">
+                        Total logged: {{ stats.total_complaints }} complaints
+                    </div>
+                </div>
+                <div class="stat-icon danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Expenses (This Month)</div>
+                    <div class="stat-value">{{ config.CURRENCY_SYMBOL }}{{ "{:,.0f}".format(stats.monthly_expenses) }}</div>
+                    <div class="stat-subtext text-muted">
+                        Lifetime: {{ config.CURRENCY_SYMBOL }}{{ "{:,.0f}".format(stats.total_expenses) }}
+                    </div>
+                </div>
+                <div class="stat-icon purple">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-12 col-xl-4">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Net Treasury Balance</div>
+                    <div class="stat-value {% if stats.treasury_balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ config.CURRENCY_SYMBOL }}{{ "{:,.0f}".format(stats.treasury_balance) }}
+                    </div>
+                    <div class="stat-subtext text-muted">
+                        Collected Maintenance minus Total Expenses
+                    </div>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Charts Section -->
+    <div class="row g-4 mb-4">
+        <!-- Monthly Collections vs Expenses Bar Chart -->
+        <div class="col-lg-8">
+            <div class="card-custom h-100 mb-0">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-chart-column text-primary"></i> Collections vs Expenses Overview</h5>
+                    <span class="badge bg-light text-secondary border">Financial Performance</span>
+                </div>
+                <div class="card-body">
+                    <canvas id="financeChart" height="110"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complaints Status Doughnut Chart -->
+        <div class="col-lg-4">
+            <div class="card-custom h-100 mb-0">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-chart-pie text-primary"></i> Complaints Breakdown</h5>
+                    <span class="badge bg-light text-secondary border">Operational</span>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <div style="max-height: 220px; width: 100%;">
+                        <canvas id="complaintsChart"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-around w-100 mt-3 small text-center text-muted">
+                        <div><strong class="text-secondary d-block">{{ stats.complaints_submitted }}</strong> Submitted</div>
+                        <div><strong class="text-warning d-block">{{ stats.complaints_in_progress }}</strong> In Progress</div>
+                        <div><strong class="text-success d-block">{{ stats.complaints_resolved }}</strong> Resolved</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tables Section -->
+    <div class="row g-4">
+        <!-- Recent Payments Table -->
+        <div class="col-lg-7">
+            <div class="card-custom mb-0">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-receipt text-primary"></i> Recent Maintenance Payments</h5>
+                    <a href="{{ url_for('payments') }}" class="btn btn-sm btn-link text-decoration-none">View All &rarr;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Flat & Resident</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td class="fw-semibold text-primary">{{ payment.receipt_no }}</td>
+                                <td>
+                                    <strong>{{ payment.flat_number }}</strong>
+                                    <div class="text-muted small">{{ payment.resident_name }}</div>
+                                </td>
+                                <td class="fw-bold">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(payment.amount) }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ payment.payment_method }}</span></td>
+                                <td class="text-muted small">{{ payment.payment_date|format_date }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_receipt', payment_id=payment.id) }}" class="btn btn-outline-primary btn-sm py-0 px-2 rounded-pill">
+                                        <i class="fa-solid fa-print"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No maintenance payments recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Complaints & Announcements -->
+        <div class="col-lg-5">
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-bell-concierge text-primary"></i> Pending Complaints</h5>
+                    <a href="{{ url_for('complaints') }}" class="btn btn-sm btn-link text-decoration-none">Manage &rarr</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for complaint in recent_complaints %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge badge-status badge-{{ complaint.priority|lower }}">{{ complaint.priority }} Priority</span>
+                                <span class="badge badge-status badge-{{ complaint.status|lower|replace(' ', '-') }}">{{ complaint.status }}</span>
+                            </div>
+                            <h6 class="mb-1 fw-bold text-dark">{{ complaint.subject }}</h6>
+                            <p class="text-muted small mb-2 text-truncate">{{ complaint.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center small text-muted">
+                                <span><i class="fa-solid fa-door-open me-1"></i> Flat {{ complaint.flat_number }} ({{ complaint.resident_name }})</span>
+                                <span>{{ complaint.created_at|format_date }}</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted small">No active complaints pending.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Flask Data: JSON format -->
+<script type="application/json" id="dashboard-chart-data">
+{
+    "months": {{ chart_months|default([])|tojson }},
+    "collections": {{ chart_collections|default([])|tojson }},
+    "expenses": {{ chart_expenses|default([])|tojson }},
+    "complaints": {
+        "submitted": {{ stats.complaints_submitted|default(0)|tojson }},
+        "in_progress": {{ stats.complaints_in_progress|default(0)|tojson }},
+        "resolved": {{ stats.complaints_resolved|default(0)|tojson }}
+    }
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Read Flask data safely
+    const dataElement = document.getElementById('dashboard-chart-data');
+
+    if (!dataElement) {
+        console.error('Dashboard chart data not found.');
+        return;
+    }
+
+    let dashboardData;
+
+    try {
+        dashboardData = JSON.parse(dataElement.textContent);
+    } catch (error) {
+        console.error('Error reading dashboard data:', error);
+        return;
+    }
+
+    // Check Chart.js
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js library is not loaded.');
+        return;
+    }
+
+    // =====================================
+    // 1. FINANCE CHART
+    // Collections vs Expenses
+    // =====================================
+
+    const financeCanvas = document.getElementById('financeChart');
+
+    if (financeCanvas) {
+
+        const financeCtx = financeCanvas.getContext('2d');
+
+        new Chart(financeCtx, {
+
+            type: 'bar',
+
+            data: {
+                labels: dashboardData.months,
+
+                datasets: [
+                    {
+                        label: 'Maintenance Collected (₹)',
+                        data: dashboardData.collections,
+                        backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                        borderColor: '#2563eb',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+
+                    {
+                        label: 'Society Expenses (₹)',
+                        data: dashboardData.expenses,
+                        backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.dataset.label + ': ₹' +
+                                    Number(context.raw || 0).toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+                    y: {
+                        beginAtZero: true,
+
+                        ticks: {
+                            callback: function (value) {
+                                return '₹' + Number(value).toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // =====================================
+    // 2. COMPLAINTS DOUGHNUT CHART
+    // =====================================
+
+    const complaintsCanvas = document.getElementById('complaintsChart');
+
+    if (complaintsCanvas) {
+
+        const complaintsCtx = complaintsCanvas.getContext('2d');
+
+        new Chart(complaintsCtx, {
+
+            type: 'doughnut',
+
+            data: {
+                labels: [
+                    'Submitted',
+                    'In Progress',
+                    'Resolved'
+                ],
+
+                datasets: [{
+                    data: [
+                        Number(dashboardData.complaints.submitted || 0),
+                        Number(dashboardData.complaints.in_progress || 0),
+                        Number(dashboardData.complaints.resolved || 0)
+                    ],
+
+                    backgroundColor: [
+                        '#64748b',
+                        '#f59e0b',
+                        '#10b981'
+                    ],
+
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+
+                    tooltip: {
+                        enabled: true
+                    }
+                },
+
+                cutout: '70%'
+            }
+        });
+    }
+
+});
+</script>
+
+{% endblock %}
+</body>
+</html>

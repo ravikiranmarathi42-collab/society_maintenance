@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Resident Portal - Society Maintenance Management System{% endblock %}
+{% block header_title %}Resident Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Resident Flat Banner -->
+    <div class="card-custom bg-white border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary-subtle text-primary p-3 rounded-circle d-none d-sm-block">
+                            <i class="fa-solid fa-house-chimney-user fs-2"></i>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary px-3 py-1 text-uppercase fw-semibold mb-1">Assigned Unit</span>
+                            <h3 class="fw-bold text-dark m-0">Flat {{ resident_info.flat_number }}</h3>
+                            <p class="text-muted small m-0">
+                                Block {{ resident_info.building_block }}, Floor {{ resident_info.floor }} &bull; 
+                                Type: <strong>{{ resident_info.flat_type }}</strong> &bull; 
+                                Monthly Rate: <strong>{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(resident_info.maintenance_rate) }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#newComplaintModal">
+                        <i class="fa-solid fa-headset me-2"></i> Raise Complaint
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Dues Alert Banner (if pending) -->
+    {% if pending_bills_amount > 0 %}
+    <div class="alert alert-warning border-warning d-flex flex-wrap align-items-center justify-content-between p-3 rounded-3 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation fs-2 text-warning"></i>
+            <div>
+                <h6 class="fw-bold m-0 text-dark">You have pending maintenance dues!</h6>
+                <div class="small text-secondary">
+                    Total unpaid amount: <strong class="text-danger fs-6">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(pending_bills_amount) }}</strong>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-danger btn-sm rounded-pill px-4 mt-2 mt-sm-0 fw-semibold" data-bs-toggle="modal" data-bs-target="#paymentModal{{ pending_bills[0].id }}">
+            <i class="fa-solid fa-bolt me-1"></i> Pay Now ({{ pending_bills[0].billing_month }})
+        </button>
+    </div>
+    {% else %}
+    <div class="alert alert-success border-success d-flex align-items-center gap-3 p-3 rounded-3 shadow-sm mb-4" role="alert">
+        <i class="fa-solid fa-circle-check fs-2 text-success"></i>
+        <div>
+            <h6 class="fw-bold m-0 text-dark">All Dues Cleared!</h6>
+            <div class="small text-secondary">Your society maintenance payments are completely up to date. Thank you!</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Outstanding Balance -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Pending Balance</div>
+                    <div class="stat-value {% if pending_bills_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(pending_bills_amount) }}
+                    </div>
+                    <div class="stat-subtext text-muted">{{ pending_bills|length }} unpaid bill(s)</div>
+                </div>
+                <div class="stat-icon warning"><i class="fa-solid fa-wallet"></i></div>
+            </div>
+        </div>
+
+        <!-- Card 2: Total Maintenance Paid -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Paid (Lifetime)</div>
+                    <div class="stat-value text-success">
+                        {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(total_paid_amount) }}
+                    </div>
+                    <div class="stat-subtext text-success">{{ payments|length }} payment receipts</div>
+                </div>
+                <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+        </div>
+
+        <!-- Card 3: Complaints Logged -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">My Complaints</div>
+                    <div class="stat-value">{{ complaints|length }}</div>
+                    <div class="stat-subtext text-muted">
+                        {{ complaints|selectattr('status', 'equalto', 'Resolved')|list|length }} resolved
+                    </div>
+                </div>
+                <div class="stat-icon info"><i class="fa-solid fa-headset"></i></div>
+            </div>
+        </div>
+
+        <!-- Card 4: Active Notices -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Society Notices</div>
+                    <div class="stat-value text-primary">{{ notices|length }}</div>
+                    <div class="stat-subtext text-muted">Active announcements</div>
+                </div>
+                <div class="stat-icon primary"><i class="fa-solid fa-bullhorn"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="row g-4">
+        <!-- Left: Maintenance Bills & Payment History -->
+        <div class="col-lg-7">
+            <!-- Bills Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-file-invoice-dollar text-primary"></i> Maintenance Bills (Flat {{ resident_info.flat_number }})</h5>
+                    <span class="badge bg-light text-secondary border">Billing History</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Bill No</th>
+                                <th>Month</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in bills %}
+                            <tr>
+                                <td class="fw-bold text-primary">{{ bill.bill_no }}</td>
+                                <td>{{ bill.billing_month }}</td>
+                                <td>
+                                    <strong>{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount + bill.penalty) }}</strong>
+                                    {% if bill.penalty > 0 %}
+                                    <div class="small text-danger">(includes ₹{{ bill.penalty }} late fee)</div>
+                                    {% endif %}
+                                </td>
+                                <td class="small">{{ bill.due_date }}</td>
+                                <td>
+                                    {% if bill.status == 'Paid' %}
+                                    <span class="badge badge-status badge-paid"><i class="fa-solid fa-check"></i> Paid</span>
+                                    {% elif bill.status == 'Pending' %}
+                                    <span class="badge badge-status badge-pending"><i class="fa-solid fa-clock"></i> Pending</span>
+                                    {% else %}
+                                    <span class="badge badge-status badge-overdue"><i class="fa-solid fa-circle-exclamation"></i> Overdue</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if bill.status != 'Paid' %}
+                                    <button class="btn btn-sm btn-primary py-1 px-3 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#paymentModal{{ bill.id }}">
+                                        <i class="fa-solid fa-credit-card me-1"></i> Pay Now
+                                    </button>
+                                    {% else %}
+                                    <a href="{{ url_for('view_bill_receipt', bill_id=bill.id) }}" class="btn btn-sm btn-outline-success py-1 px-2 rounded-pill">
+                                        <i class="fa-solid fa-receipt me-1"></i> Receipt
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- Simulated Payment Gateway Modal -->
+                            {% if bill.status != 'Paid' %}
+                            <div class="modal fade" id="paymentModal{{ bill.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('resident_pay_bill', bill_id=bill.id) }}" id="simulatedPaymentForm">
+                                            <div class="modal-header bg-primary text-white">
+                                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-shield-halved me-2"></i>Secure Payment Gateway</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <!-- Bill Summary Box -->
+                                                <div class="p-3 bg-light rounded-3 mb-4 border">
+                                                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                                                        <span>Bill Reference:</span>
+                                                        <span class="fw-semibold text-dark">{{ bill.bill_no }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                                                        <span>Billing Month:</span>
+                                                        <span class="fw-semibold text-dark">{{ bill.billing_month }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                                                        <span>Flat Particulars:</span>
+                                                        <span class="fw-semibold text-dark">Flat {{ resident_info.flat_number }}</span>
+                                                    </div>
+                                                    <hr class="my-2">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold">Total Amount Due:</span>
+                                                        <span class="fw-bold fs-4 text-primary">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount + bill.penalty) }}</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Payment Method Selector -->
+                                                <label class="form-label small fw-bold text-muted">SELECT PAYMENT MODE</label>
+                                                <div class="row g-2 mb-3">
+                                                    <div class="col-6">
+                                                        <input type="radio" class="btn-check" name="payment_method" id="payUPI{{ bill.id }}" value="UPI" checked>
+                                                        <label class="btn btn-outline-secondary w-100 py-2 text-start" for="payUPI{{ bill.id }}">
+                                                            <i class="fa-solid fa-mobile-screen text-primary me-2"></i> <strong>UPI / QR</strong>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="radio" class="btn-check" name="payment_method" id="payCard{{ bill.id }}" value="Credit/Debit Card">
+                                                        <label class="btn btn-outline-secondary w-100 py-2 text-start" for="payCard{{ bill.id }}">
+                                                            <i class="fa-solid fa-credit-card text-success me-2"></i> <strong>Debit/Card</strong>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="radio" class="btn-check" name="payment_method" id="payNet{{ bill.id }}" value="Bank Transfer">
+                                                        <label class="btn btn-outline-secondary w-100 py-2 text-start" for="payNet{{ bill.id }}">
+                                                            <i class="fa-solid fa-building-columns text-info me-2"></i> <strong>Net Banking</strong>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="radio" class="btn-check" name="payment_method" id="payCash{{ bill.id }}" value="Cash">
+                                                        <label class="btn btn-outline-secondary w-100 py-2 text-start" for="payCash{{ bill.id }}">
+                                                            <i class="fa-solid fa-hand-holding-dollar text-warning me-2"></i> <strong>Cash at Office</strong>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- UPI Display Box -->
+                                                <div class="text-center p-3 border rounded-3 bg-light mb-3">
+                                                    <i class="fa-solid fa-qrcode fs-1 text-primary mb-2"></i>
+                                                    <div class="small fw-semibold">Scan & Pay via any UPI App</div>
+                                                    <div class="small text-muted font-monospace">greenfield.society@yesbank</div>
+                                                </div>
+
+                                                <div class="alert alert-info py-2 small mb-0">
+                                                    <i class="fa-solid fa-circle-info me-1"></i> Simulated College Sandbox: No real currency will be deducted. Payment confirmation will instantly generate your official society receipt.
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" id="paymentSubmitBtn" class="btn btn-success btn-sm px-4">
+                                                    <i class="fa-solid fa-lock me-1"></i> Pay {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(bill.amount + bill.penalty) }}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% else %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">No maintenance bills on file.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Payment Receipts -->
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-receipt text-primary"></i> Payment Receipts</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Date</th>
+                                <th class="text-end">Print Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td class="fw-bold text-primary">{{ p.receipt_no }}</td>
+                                <td class="fw-bold text-success">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(p.amount) }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ p.payment_method }}</span></td>
+                                <td class="small text-muted">{{ p.payment_date|format_date }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('view_receipt', payment_id=p.id) }}" class="btn btn-sm btn-outline-primary py-1 px-3 rounded-pill">
+                                        <i class="fa-solid fa-print me-1"></i> Receipt
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No payments recorded yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: My Complaints & Latest Notices -->
+        <div class="col-lg-5">
+            <!-- Notices Board -->
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-bullhorn text-primary"></i> Society Notices</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for n in notices[:3] %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge 
+                                    {% if n.category == 'Emergency' %}bg-danger
+                                    {% elif n.category == 'Maintenance' %}bg-warning text-dark
+                                    {% elif n.category == 'Meeting' %}bg-info text-dark
+                                    {% elif n.category == 'Event' %}bg-success
+                                    {% else %}bg-secondary{% endif %} small">
+                                    {{ n.category }}
+                                </span>
+                                <small class="text-muted">{{ n.published_date }}</small>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">{{ n.title }}</h6>
+                            <p class="text-muted small mb-0">{{ n.message[:140] }}...</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted small">No active notices.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaints Tracker -->
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-headset text-primary"></i> My Complaints Track</h5>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2" data-bs-toggle="modal" data-bs-target="#newComplaintModal">
+                        <i class="fa-solid fa-plus me-1"></i> New
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for c in complaints %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge badge-status badge-{{ c.status|lower|replace(' ', '-') }}">{{ c.status }}</span>
+                                <small class="text-muted">{{ c.created_at|format_date }}</small>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">{{ c.subject }}</h6>
+                            <p class="text-muted small mb-2">{{ c.description }}</p>
+                            {% if c.admin_remarks %}
+                            <div class="p-2 bg-light rounded border small text-secondary">
+                                <strong>Admin Update:</strong> {{ c.admin_remarks }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted small">No complaints submitted.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Resident Raise New Complaint -->
+<div class="modal fade" id="newComplaintModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('resident_submit_complaint') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Submit Maintenance Complaint</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Complaint Category <span class="text-danger">*</span></label>
+                        <select name="category" class="form-select" required>
+                            <option value="Plumbing">Water Supply & Plumbing</option>
+                            <option value="Electricity">Electricity & Wiring</option>
+                            <option value="Cleaning">Cleaning & Housekeeping</option>
+                            <option value="Lift / Elevator">Lift / Elevator</option>
+                            <option value="Security">Security & Gate Entry</option>
+                            <option value="Parking">Parking Space Dispute</option>
+                            <option value="Noise / Disturbance">Noise & Nuisance</option>
+                            <option value="Other">Other Issues</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-8">
+                            <label class="form-label small fw-semibold">Subject / Title <span class="text-danger">*</span></label>
+                            <input type="text" name="subject" class="form-control" placeholder="e.g. Tap leaking in kitchen" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            <select name="priority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Emergency">Emergency</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Detailed Description <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Describe the issue in detail to help society maintenance staff diagnose it..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Submit Grievance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

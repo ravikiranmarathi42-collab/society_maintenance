@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Residents - Society Maintenance Management System{% endblock %}
+{% block header_title %}Resident Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold m-0 text-dark">Society Residents</h4>
+            <p class="text-muted small m-0">Directory of registered residents and their mapped flat units.</p>
+        </div>
+        <button class="btn btn-primary btn-sm rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#addResidentModal">
+            <i class="fa-solid fa-user-plus me-1"></i> Register New Resident
+        </button>
+    </div>
+
+    <!-- Residents Table Card -->
+    <div class="card-custom">
+        <div class="card-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-users text-primary"></i>
+                <h5 class="card-title m-0">All Society Members ({{ residents|length }})</h5>
+            </div>
+            <div class="w-25">
+                <input type="text" id="tableSearchInput" class="form-control form-control-sm" placeholder="Search resident, flat, phone...">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Resident Name</th>
+                        <th>Assigned Flat</th>
+                        <th>Contact Number</th>
+                        <th>Email Address</th>
+                        <th>Move-in Date</th>
+                        <th>Status</th>
+                        <th>Login Account</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resident in residents %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">{{ resident.full_name }}</div>
+                            <small class="text-muted">Emergency: {{ resident.emergency_contact or 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fs-6">
+                                Flat {{ resident.flat_number }}
+                            </span>
+                            <div class="text-muted small">Block {{ resident.building_block }} &bull; Floor {{ resident.floor }}</div>
+                        </td>
+                        <td>{{ resident.phone }}</td>
+                        <td>{{ resident.email }}</td>
+                        <td>{{ resident.joining_date }}</td>
+                        <td>
+                            {% if resident.status == 'Active' %}
+                            <span class="badge badge-status badge-active"><i class="fa-solid fa-circle-check"></i> Active</span>
+                            {% else %}
+                            <span class="badge badge-status badge-vacant"><i class="fa-solid fa-circle-xmark"></i> Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if resident.username %}
+                            <span class="badge bg-light text-dark border">
+                                <i class="fa-solid fa-user me-1 text-success"></i> {{ resident.username }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary">No Login</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary py-1 px-2" data-bs-toggle="modal" data-bs-target="#editResidentModal{{ resident.id }}" title="Edit Resident">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <form method="POST" action="{{ url_for('delete_resident', resident_id=resident.id) }}" class="d-inline confirm-delete-form" data-item-name="{{ resident.full_name }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Remove Resident">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Resident Modal -->
+                    <div class="modal fade" id="editResidentModal{{ resident.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('edit_resident', resident_id=resident.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Edit Resident Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Full Name</label>
+                                            <input type="text" name="full_name" class="form-control" value="{{ resident.full_name }}" required>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Phone Number</label>
+                                                <input type="tel" name="phone" class="form-control" value="{{ resident.phone }}" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Email</label>
+                                                <input type="email" name="email" class="form-control" value="{{ resident.email }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Assigned Flat</label>
+                                            <select name="flat_id" class="form-select" required>
+                                                <option value="{{ resident.flat_id }}" selected>Current: Flat {{ resident.flat_number }}</option>
+                                                {% for flat in vacant_flats %}
+                                                <option value="{{ flat.id }}">Flat {{ flat.flat_number }} (Block {{ flat.building_block }} - {{ flat.flat_type }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Joining / Move-in Date</label>
+                                                <input type="date" name="joining_date" class="form-control" value="{{ resident.joining_date }}" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Membership Status</label>
+                                                <select name="status" class="form-select" required>
+                                                    <option value="Active" {% if resident.status == 'Active' %}selected{% endif %}>Active</option>
+                                                    <option value="Inactive" {% if resident.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Emergency Contact</label>
+                                            <input type="text" name="emergency_contact" class="form-control" value="{{ resident.emergency_contact or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Update Resident</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No resident records found. Click "Register New Resident" to add one.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Resident Modal -->
+<div class="modal fade" id="addResidentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_resident') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Register Resident</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" class="form-control" placeholder="e.g. Anand Mahindra" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                            <input type="tel" name="phone" class="form-control" placeholder="+91 98765 00000" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="resident@example.com" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Assign Flat <span class="text-danger">*</span></label>
+                        <select name="flat_id" class="form-select" required>
+                            <option value="" disabled selected>-- Select Vacant Flat --</option>
+                            {% for flat in vacant_flats %}
+                            <option value="{{ flat.id }}">Flat {{ flat.flat_number }} (Block {{ flat.building_block }}, Floor {{ flat.floor }} - {{ flat.flat_type }})</option>
+                            {% endfor %}
+                        </select>
+                        {% if not vacant_flats %}
+                        <small class="text-danger">No vacant flats available. Please register new flats first.</small>
+                        {% endif %}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Move-in Date <span class="text-danger">*</span></label>
+                            <input type="date" name="joining_date" class="form-control" value="2026-10-01" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Emergency Contact</label>
+                            <input type="text" name="emergency_contact" class="form-control" placeholder="Name & Phone">
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+                    <h6 class="fw-bold small text-secondary"><i class="fa-solid fa-key me-1"></i> Optional Login Credentials</h6>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Username</label>
+                            <input type="text" name="username" class="form-control form-control-sm" placeholder="e.g. anand101">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Initial Password</label>
+                            <input type="password" name="password" class="form-control form-control-sm" placeholder="Temporary password">
+                        </div>
+                    </div>
+                    <small class="text-muted" style="font-size: 0.75rem;">If left empty, resident can self-register using their flat number.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Resident</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

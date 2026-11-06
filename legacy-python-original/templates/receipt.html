@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt #{{ payment.receipt_no }} - {{ config.SOCIETY_NAME }}{% endblock %}
+{% block header_title %}Official Payment Receipt{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Top Action Bar (hidden on print) -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <a href="{{ url_for('payments' if session.get('role') == 'admin' else 'resident_payments') }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Payments
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary btn-sm rounded-pill shadow-sm px-4">
+                <i class="fa-solid fa-print me-2"></i> Print / Download PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable Receipt Card -->
+    <div class="receipt-container">
+        <!-- Header -->
+        <div class="receipt-header text-center position-relative">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="text-start">
+                    <span class="badge bg-secondary-subtle text-secondary small">ORIGINAL RECEIPT</span>
+                </div>
+                <div>
+                    <span class="receipt-stamp">PAID</span>
+                </div>
+            </div>
+
+            <h3 class="fw-bold text-dark m-0">{{ config.SOCIETY_NAME }}</h3>
+            <p class="text-muted small m-0">{{ config.SOCIETY_TAGLINE }} &bull; Reg. No: <strong>{{ config.SOCIETY_REG_NO }}</strong></p>
+            <p class="text-muted small m-0">{{ config.SOCIETY_ADDRESS }}</p>
+            <p class="text-muted small m-0"><i class="fa-solid fa-phone me-1"></i> {{ config.SOCIETY_PHONE }} &bull; <i class="fa-solid fa-envelope me-1"></i> {{ config.SOCIETY_EMAIL }}</p>
+            
+            <div class="mt-3 py-1 bg-light border-top border-bottom text-uppercase fw-bold small text-secondary" style="letter-spacing: 0.1em;">
+                MAINTENANCE ASSESSMENT RECEIPT
+            </div>
+        </div>
+
+        <!-- Receipt Metadata Grid -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+                <table class="table table-sm table-borderless m-0">
+                    <tr>
+                        <td class="text-muted small" style="width: 140px;">Receipt Number:</td>
+                        <td class="fw-bold font-monospace text-primary">{{ payment.receipt_no }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted small">Bill Reference:</td>
+                        <td class="fw-semibold">{{ payment.bill_no }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted small">Billing Month:</td>
+                        <td class="fw-semibold">{{ payment.billing_month }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-sm-6">
+                <table class="table table-sm table-borderless m-0">
+                    <tr>
+                        <td class="text-muted small" style="width: 140px;">Payment Date:</td>
+                        <td class="fw-semibold">{{ payment.payment_date|format_datetime }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted small">Payment Mode:</td>
+                        <td class="fw-semibold">{{ payment.payment_method }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted small">Transaction ID:</td>
+                        <td class="font-monospace small text-muted">{{ payment.transaction_id or 'OFFLINE/CASH' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Resident & Flat Details Box -->
+        <div class="p-3 bg-light rounded-3 mb-4 border">
+            <div class="row">
+                <div class="col-sm-6">
+                    <small class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem;">Received With Thanks From:</small>
+                    <h5 class="fw-bold text-dark m-0 mt-1">{{ payment.resident_name or 'Resident' }}</h5>
+                    <div class="small text-muted">{{ payment.resident_phone }} &bull; {{ payment.resident_email }}</div>
+                </div>
+                <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
+                    <small class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem;">Flat Particulars:</small>
+                    <div class="fw-bold fs-6 text-dark mt-1">Flat {{ payment.flat_number }}</div>
+                    <div class="small text-muted">Block {{ payment.building_block }}, Floor {{ payment.floor }} ({{ payment.flat_type }})</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Particulars & Line Items Table -->
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th class="small text-uppercase">#</th>
+                        <th class="small text-uppercase">Description of Charges</th>
+                        <th class="small text-uppercase">Period</th>
+                        <th class="small text-uppercase text-end">Amount ({{ config.CURRENCY_SYMBOL }})</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <strong>Monthly Society Maintenance Charges</strong>
+                            <div class="small text-muted">Regular maintenance, common area electricity, security, elevator, and housekeeping.</div>
+                        </td>
+                        <td>{{ payment.billing_month }}</td>
+                        <td class="text-end fw-semibold">{{ "{:,.2f}".format(payment.base_amount or payment.amount) }}</td>
+                    </tr>
+                    {% if payment.penalty and payment.penalty > 0 %}
+                    <tr>
+                        <td>2</td>
+                        <td>
+                            <strong>Late Payment Surcharge / Penalty</strong>
+                            <div class="small text-muted">Applicable for payment completed after designated due date.</div>
+                        </td>
+                        <td>-</td>
+                        <td class="text-end fw-semibold text-danger">{{ "{:,.2f}".format(payment.penalty) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-light">
+                        <th colspan="3" class="text-end text-uppercase">Total Amount Paid:</th>
+                        <th class="text-end fw-bold fs-5 text-success">{{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(payment.amount) }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Remarks -->
+        <div class="mb-4 small text-muted">
+            <strong>Remarks / Notes:</strong> {{ payment.remarks or 'Thank you for your prompt maintenance payment. Greenfield Heights Management.' }}
+        </div>
+
+        <!-- Signatures & Footer -->
+        <div class="row align-items-end mt-5 pt-4 border-top">
+            <div class="col-6">
+                <small class="text-muted d-block font-monospace">Generated automatically by SMMS Portal</small>
+                <small class="text-muted">Computer generated document. No physical signature required.</small>
+            </div>
+            <div class="col-6 text-end">
+                <div class="d-inline-block text-center" style="min-width: 180px;">
+                    <div style="height: 35px; border-bottom: 1px solid #475569;" class="mb-1">
+                        <span class="fst-italic text-secondary small">Authorized Signatory</span>
+                    </div>
+                    <small class="fw-bold d-block text-dark">Secretary / Treasurer</small>
+                    <small class="text-muted" style="font-size: 0.75rem;">{{ config.SOCIETY_NAME }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

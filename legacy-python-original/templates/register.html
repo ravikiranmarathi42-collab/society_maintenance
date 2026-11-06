@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Resident Registration - Society Maintenance Management System{% endblock %}
+
+{% block public_content %}
+<div class="auth-wrapper py-5">
+    <div class="auth-card" style="max-width: 650px;">
+        <div class="auth-brand">
+            <i class="fa-solid fa-house-chimney-user"></i>
+            <h3>Resident Registration</h3>
+            <p>Create your resident account to manage maintenance & bills</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="row g-3">
+                <!-- Full Name -->
+                <div class="col-md-6">
+                    <label for="full_name" class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" placeholder="e.g. Ramesh Kulkarni" required>
+                </div>
+
+                <!-- Username -->
+                <div class="col-md-6">
+                    <label for="reg_username" class="form-label small fw-semibold">Username <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="reg_username" name="username" placeholder="Choose a username" required>
+                </div>
+
+                <!-- Email Address -->
+                <div class="col-md-6">
+                    <label for="email" class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <!-- Phone Number -->
+                <div class="col-md-6">
+                    <label for="phone" class="form-label small fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                    <input type="tel" class="form-control" id="phone" name="phone" placeholder="+91 98765 43210" required>
+                </div>
+
+                <!-- Select Flat -->
+                <div class="col-md-6">
+                    <label for="flat_id" class="form-label small fw-semibold">Select Your Flat / Unit <span class="text-danger">*</span></label>
+                    <select class="form-select" id="flat_id" name="flat_id" required>
+                        <option value="" disabled selected>-- Choose Available Flat --</option>
+                        {% for flat in available_flats %}
+                        <option value="{{ flat.id }}">
+                            Flat {{ flat.flat_number }} (Block {{ flat.building_block }}, Floor {{ flat.floor }} - {{ flat.flat_type }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not available_flats %}
+                    <small class="text-danger">No vacant flats currently listed. Contact society administrator.</small>
+                    {% endif %}
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="col-md-6">
+                    <label for="emergency_contact" class="form-label small fw-semibold">Emergency Contact</label>
+                    <input type="text" class="form-control" id="emergency_contact" name="emergency_contact" placeholder="Name & Phone">
+                </div>
+
+                <!-- Password -->
+                <div class="col-md-6">
+                    <label for="reg_password" class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="reg_password" name="password" placeholder="At least 6 characters" required minlength="6">
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="col-md-6">
+                    <label for="confirm_password" class="form-label small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Repeat password" required minlength="6">
+                </div>
+            </div>
+
+            <div class="form-check mt-3 mb-4">
+                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                <label class="form-check-label small text-muted" for="termsCheck">
+                    I agree to the Society Bylaws and Code of Conduct.
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm">
+                <i class="fa-solid fa-user-plus me-2"></i> Register Account
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <span class="text-muted small">Already have an account? </span>
+            <a href="{{ url_for('login') }}" class="small fw-semibold text-primary">Sign In here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - Society Maintenance Management System{% endblock %}
+{% block header_title %}Account Profile & Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row g-4">
+        <!-- Profile Summary Left Column -->
+        <div class="col-lg-4">
+            <div class="card-custom text-center p-4">
+                <div class="mx-auto mb-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 80px; height: 80px; font-size: 2.25rem;">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <h5 class="fw-bold text-dark m-0">{{ user.full_name }}</h5>
+                <div class="text-muted small mb-2">@{{ user.username }}</div>
+                <div>
+                    <span class="badge bg-primary text-uppercase px-3 py-1">{{ user.role }}</span>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="text-start small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Account ID:</span>
+                        <span class="fw-semibold font-monospace">#{{ user.id }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Registered Email:</span>
+                        <span class="fw-semibold">{{ user.email }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Phone:</span>
+                        <span class="fw-semibold">{{ user.phone or 'Not provided' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Member Since:</span>
+                        <span class="fw-semibold">{{ user.created_at|format_date }}</span>
+                    </div>
+                </div>
+
+                {% if resident_info %}
+                <div class="mt-4 p-3 bg-light rounded-3 text-start border">
+                    <h6 class="fw-bold small text-secondary mb-2"><i class="fa-solid fa-house-chimney me-1"></i> Flat Assignment</h6>
+                    <div class="fw-bold fs-6 text-primary">Flat {{ resident_info.flat_number }}</div>
+                    <div class="small text-muted">Block {{ resident_info.building_block }} &bull; Floor {{ resident_info.floor }}</div>
+                    <div class="small text-muted mt-1">Flat Type: {{ resident_info.flat_type }}</div>
+                    <div class="small text-muted">Monthly Rate: {{ config.CURRENCY_SYMBOL }}{{ "{:,.2f}".format(resident_info.maintenance_rate) }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Edit Profile & Change Password Right Column -->
+        <div class="col-lg-8">
+            <!-- Edit Profile Details Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-id-card text-primary"></i> Edit Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_profile') }}">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Full Name</label>
+                                <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Username</label>
+                                <input type="text" class="form-control bg-light" value="{{ user.username }}" readonly disabled>
+                                <small class="text-muted" style="font-size: 0.72rem;">Username cannot be modified.</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Email Address</label>
+                                <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Phone Number</label>
+                                <input type="tel" name="phone" class="form-control" value="{{ user.phone or '' }}" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Update Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="fa-solid fa-lock text-primary"></i> Change Account Password</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('change_password') }}">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Current Password <span class="text-danger">*</span></label>
+                            <input type="password" name="current_password" class="form-control" placeholder="Enter current password" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">New Password <span class="text-danger">*</span></label>
+                                <input type="password" name="new_password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Confirm New Password <span class="text-danger">*</span></label>
+                                <input type="password" name="confirm_password" class="form-control" placeholder="Repeat new password" required minlength="6">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-sm rounded-pill px-4">
+                            <i class="fa-solid fa-key me-1"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

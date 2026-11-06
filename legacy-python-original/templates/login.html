@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - Society Maintenance Management System{% endblock %}
+
+{% block public_content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="fa-solid fa-building-shield"></i>
+            <h3>Welcome Back</h3>
+            <p>Access your society maintenance portal</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <!-- Role Selector Tabs -->
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">SIGN IN AS</label>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="role" id="roleResident" value="resident" checked>
+                    <label class="btn btn-outline-primary py-2" for="roleResident">
+                        <i class="fa-solid fa-house-user me-1"></i> Resident
+                    </label>
+
+                    <input type="radio" class="btn-check" name="role" id="roleAdmin" value="admin">
+                    <label class="btn btn-outline-primary py-2" for="roleAdmin">
+                        <i class="fa-solid fa-user-shield me-1"></i> Admin
+                    </label>
+                </div>
+            </div>
+
+            <!-- Username or Email -->
+            <div class="mb-3">
+                <label for="username" class="form-label small fw-semibold">Username or Email</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Enter username or email" required autofocus>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="form-label small fw-semibold">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> Log In
+            </button>
+        </form>
+
+        <!-- Quick Demo Credentials Box for Evaluation -->
+        <div class="demo-credentials-box">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <strong class="text-secondary"><i class="fa-solid fa-key me-1"></i> Demo Credentials:</strong>
+                <span class="badge bg-info-subtle text-info border">One-click auto-fill</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="fillAdminDemo" class="btn btn-sm btn-outline-secondary flex-fill" onclick="document.getElementById('roleAdmin').checked = true;">
+                    Admin (admin / admin123)
+                </button>
+                <button type="button" id="fillResidentDemo" class="btn btn-sm btn-outline-secondary flex-fill" onclick="document.getElementById('roleResident').checked = true;">
+                    Resident (resident1 / resident123)
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <span class="text-muted small">New resident in our society? </span>
+            <a href="{{ url_for('register') }}" class="small fw-semibold text-primary">Register Here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
